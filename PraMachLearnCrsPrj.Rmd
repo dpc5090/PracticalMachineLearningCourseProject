@@ -1,0 +1,95 @@
+---
+title: "PracticalMachineLearningCourseProject"
+author: "Daniel Chen"
+date: "October 21, 2015"
+output: html_document
+---
+#Objective
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset). 
+
+Six young health participants were asked to perform one set of 10 repetitions of the Unilateral Dumbbell Biceps Curl in five different fashions: exactly according to the specification (Class A), throwing the elbows to the front (Class B), lifting the dumbbell only halfway (Class C), lowering the dumbbell only halfway (Class D) and throwing the hips to the front (Class E).
+
+The goal of this project is to predict the manner in which they did the exercise. This is the "classe" variable in the training set. You may use any of the other variables to predict with. You should create a report describing how you built your model, how you used cross validation, what you think the expected out of sample error is, and why you made the choices you did. You will also use your prediction model to predict 20 different test cases. 
+
+##CODE
+
+First thing was to load the data and make sure all the missing values and "#DIV/0!" values were changed to NA. Then the training data was divided into a training set and a validation with 80% going to the training set. 
+
+I removed all the columns that had values of NA. Which narrowed down the variables from 160 to 53. Lastly, I removed the first 7 columns for the training data because they do not hold any information that appears relevant to determining the "classe" variable.
+
+```{r, cache  = TRUE}
+library(caret)
+dat<-read.csv("plm-training.csv", na.strings = c("NA","#DIV/0!",""))
+testing<-read.csv("plm-testing.csv", na.strings = c("NA","#DIV/0!",""))
+set.seed(1000)
+intrain<- createDataPartition(dat[,1], p = .8)
+training<-dat[intrain[[1]],]
+validation<-dat[intrain[[1]],]
+x<-colnames(training[colSums(is.na(training))==0])
+x<-x[-c(1:7)]
+training<-training[,x]
+```
+
+#RPART method
+
+Did the analysis and comparison using the classification trees method. Then created a prediction based on that model using validation data and compared it to the actual validation data's classe variable.
+
+
+```{r, cache = TRUE}
+modfitrpart<-train(classe~., data = training, method = "rpart")
+
+```
+
+```{r}
+modfitrpart
+```
+out of sample error can be estimated by 1-accuracy. Which give the rpart method an out of sample error of roughly 47.4%
+
+
+
+#RandomForests method
+
+The next method to be used for analysis and comparison was random forests. Then I created a prediction based on that model using validation data and compared it to the actual validation data's classe variable.
+
+
+```{r, cache = TRUE}
+modfitrf<-train(classe~., data = training, method = "rf")
+```
+
+
+```{r}
+modfitrf
+```
+Using the same formula for out of sample error, the rate is 1.147%
+
+#Results
+
+##RPart results
+
+```{r}
+library(caret)
+prpart<-predict(modfitrpart, newdata = validation)
+confusionMatrix(prpart, validation$classe)
+```
+This model only had an accuracy of 49%, which corresponds pretty closely to the out of sample error rate predicted by the model.
+
+
+##RandomForests Results
+
+```{r}
+prf<-predict(modfitrf, newdata = validation)
+confusionMatrix(prf, validation$classe)
+```
+
+This model was able to fit the validation data with accuracy of 100%, which also corresponds very closely to the out of sample error rate predicted by the model.
+
+
+Since, the results from the random forests method were so much much better than the results from the classification trees method, the random forests method was chossen to be used on the test data.
+
+#Prediction on Testing Data
+
+```{r}
+ptesting<-predict(modfitrf, newdata = testing)
+ptesting
+```
+
